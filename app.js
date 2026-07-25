@@ -144,7 +144,7 @@
   }
 
   function lichessAnalysisUrl(fen) {
-    var url = 'https://lichess.org/analysis/' + encodeURIComponent(fen);
+    var url = 'https://lichess.org/analysis/' + encodeURI(fen);
     if (color === 'black') url += '?color=black';
     return url;
   }
