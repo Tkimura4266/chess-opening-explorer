@@ -100,6 +100,9 @@ main {
   font-weight: 600;
 }
 #node-stats { font-size: 0.85rem; }
+.lichess-link { margin: 0.4rem 0 0; font-size: 0.85rem; }
+.lichess-link a { color: var(--accent); text-decoration: none; }
+.lichess-link a:hover { text-decoration: underline; }
 
 .move-list { display: flex; flex-direction: column; gap: 0.4rem; }
 .move-row {

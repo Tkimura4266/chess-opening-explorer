@@ -143,6 +143,12 @@
     });
   }
 
+  function lichessAnalysisUrl(fen) {
+    var url = 'https://lichess.org/analysis/' + encodeURIComponent(fen);
+    if (color === 'black') url += '?color=black';
+    return url;
+  }
+
   function render() {
     renderBreadcrumb();
     renderMoveList();
@@ -152,6 +158,7 @@
     $('#node-stats').text(
       total + '局 (勝ち ' + currentNode.wins + ' / 分け ' + currentNode.draws + ' / 負け ' + currentNode.losses + ')'
     );
+    $('#lichess-link').attr('href', lichessAnalysisUrl(currentNode.fen));
   }
 
   function onDragStart(source, piece) {
