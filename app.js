@@ -4,6 +4,7 @@
   var game = new Chess();
   var board = null;
   var trees = {};       // { white: rootNode, black: rootNode }
+  var pgnByGameId = {};
   var color = 'white';
   var treeRoot = null;
   var currentNode = null;
@@ -124,6 +125,22 @@
     });
   }
 
+  function openOnLichess(gameId) {
+    var pgn = pgnByGameId[gameId];
+    if (!pgn) return;
+    var opened = window.open('https://lichess.org/paste', '_blank');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(pgn).then(function () {
+        $('#hint').text('対局のPGNをコピーしました。開いたLichessのタブに貼り付けて「Import game」を押してください。');
+      }).catch(function () {
+        $('#hint').text('PGNのコピーに失敗しました。');
+      });
+    }
+    if (!opened) {
+      $('#hint').text('ポップアップがブロックされました。ブラウザの設定を確認してください。');
+    }
+  }
+
   function renderSampleGames() {
     var $ul = $('#sample-games').empty();
     var samples = currentNode.samples || [];
@@ -137,8 +154,21 @@
         .addClass(g.result)
         .text(RESULT_LABEL[g.result] || g.result);
       var $left = $('<span></span>').append($badge).append(' vs ' + g.opponent + ' (' + g.date + ')');
-      var $link = $('<a target="_blank" rel="noopener">対局を見る</a>').attr('href', g.url);
-      $li.append($left).append($link);
+
+      var $right = $('<span class="game-links"></span>');
+      if (pgnByGameId[g.game_id]) {
+        var $lichessBtn = $('<a href="#">対局を見る (Lichess)</a>');
+        $lichessBtn.on('click', function (e) {
+          e.preventDefault();
+          openOnLichess(g.game_id);
+        });
+        $right.append($lichessBtn);
+        $right.append(' · ');
+      }
+      var $ccLink = $('<a target="_blank" rel="noopener">Chess.com</a>').attr('href', g.url);
+      $right.append($ccLink);
+
+      $li.append($left).append($right);
       $ul.append($li);
     });
   }
@@ -201,6 +231,10 @@
     fetchJSON('data/meta.json').then(function (meta) {
       $('#subtitle').text('Chess.com ' + meta.username + ' の全対局から作った自分だけのオープニングツリー。盤面の駒を動かすと辿れます。');
       $('#generated-at').text('Generated ' + meta.generated_at);
+    });
+
+    fetchJSON('data/games_pgn.json').then(function (data) {
+      pgnByGameId = data;
     });
 
     loadColor('white');

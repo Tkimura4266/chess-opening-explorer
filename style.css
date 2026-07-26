@@ -141,6 +141,7 @@ main {
 }
 .sample-games a { color: var(--accent); text-decoration: none; }
 .sample-games a:hover { text-decoration: underline; }
+.sample-games .game-links { white-space: nowrap; }
 .sample-games .badge {
   font-size: 0.72rem;
   font-weight: 600;
