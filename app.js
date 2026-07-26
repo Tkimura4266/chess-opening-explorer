@@ -128,16 +128,27 @@
   function openOnLichess(gameId) {
     var pgn = pgnByGameId[gameId];
     if (!pgn) return;
-    var opened = window.open('https://lichess.org/paste', '_blank');
+
+    function proceed(copied) {
+      var msg = copied
+        ? '対局のPGNをコピーしました。開いたLichessのタブに貼り付けて(Ctrl+V)「Import game」を押してください。'
+        : 'PGNのコピーに失敗しました。開いたLichessのタブに、以下のPGNを手動でコピーして貼り付けてください:\n\n' + pgn;
+      window.alert(msg);
+      var opened = window.open('https://lichess.org/paste', '_blank');
+      $('#hint').text(copied ? 'PGNをコピー済みです。Ctrl+Vで貼り付けてください。' : 'PGNのコピーに失敗しました。');
+      if (!opened) {
+        $('#hint').text('ポップアップがブロックされました。ブラウザの設定を確認してください。');
+      }
+    }
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(pgn).then(function () {
-        $('#hint').text('対局のPGNをコピーしました。開いたLichessのタブに貼り付けて「Import game」を押してください。');
+        proceed(true);
       }).catch(function () {
-        $('#hint').text('PGNのコピーに失敗しました。');
+        proceed(false);
       });
-    }
-    if (!opened) {
-      $('#hint').text('ポップアップがブロックされました。ブラウザの設定を確認してください。');
+    } else {
+      proceed(false);
     }
   }
 
