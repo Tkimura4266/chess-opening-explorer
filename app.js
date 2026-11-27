@@ -3,10 +3,10 @@
 
   var game = new Chess();
   var board = null;
-  var trees = {};       // { white: rootNode, black: rootNode }
+  var trees = {};       // { white: {nodes, games}, black: {nodes, games} } 局面(FEN)単位のグラフ
   var pgnByGameId = {};
   var color = 'white';
-  var treeRoot = null;
+  var graph = null;      // trees[color]
   var currentNode = null;
   var path = [];         // array of SAN strings from root
 
@@ -38,8 +38,8 @@
 
   function resetToRoot() {
     game.reset();
-    treeRoot = trees[color];
-    currentNode = treeRoot;
+    graph = trees[color];
+    currentNode = graph.nodes[0];
     path = [];
     if (board) board.orientation(color === 'white' ? 'white' : 'black');
     if (board) board.position('start');
@@ -47,12 +47,19 @@
     render();
   }
 
+  // 局面 node から san を指した先の局面(無ければ null)
+  function childOf(node, san) {
+    var e = node.moves[san];
+    return e ? graph.nodes[e[0]] : null;
+  }
+
   function walkToPath(newPath) {
     game.reset();
-    var node = treeRoot;
+    var node = graph.nodes[0];
     for (var i = 0; i < newPath.length; i++) {
-      game.move(newPath[i]);
-      node = node.children[newPath[i]];
+      var next = childOf(node, newPath[i]);
+      if (!next || !game.move(newPath[i])) { newPath = newPath.slice(0, i); break; }
+      node = next;
     }
     path = newPath;
     currentNode = node;
@@ -61,7 +68,7 @@
   }
 
   function playSan(san) {
-    var child = currentNode.children[san];
+    var child = childOf(currentNode, san);
     if (!child) return false;
     game.move(san);
     path = path.concat([san]);
@@ -95,8 +102,10 @@
 
   function renderMoveList() {
     var $list = $('#move-list').empty();
-    var entries = Object.keys(currentNode.children).map(function (san) {
-      return [san, currentNode.children[san]];
+    // 手ごとの成績は「この局面からその手を指した対局」で集計(どの手順で来たかは問わない)
+    var entries = Object.keys(currentNode.moves).map(function (san) {
+      var e = currentNode.moves[san];
+      return [san, { count: e[1], wins: e[2], draws: e[3], losses: e[4] }];
     });
     entries.sort(function (a, b) { return b[1].count - a[1].count; });
 
@@ -154,7 +163,10 @@
 
   function renderSampleGames() {
     var $ul = $('#sample-games').empty();
-    var samples = currentNode.samples || [];
+    var samples = (currentNode.samples || []).map(function (gid) {
+      var g = graph.games[gid] || {};
+      return { game_id: gid, date: g.date, opponent: g.opponent, result: g.result, url: g.url };
+    });
     if (samples.length === 0) {
       $ul.append('<li class="muted">この局面につながる対局はありません。</li>');
       return;
@@ -184,6 +196,31 @@
     });
   }
 
+  // 複数の手順から到達している局面なら、その手順一覧を出す
+  function renderTranspositions() {
+    var $box = $('#transpositions').empty();
+    var paths = currentNode.paths;
+    if (!paths || paths.length < 2) {
+      $('#transpositions-section').hide();
+      return;
+    }
+    $('#transpositions-section').show();
+    var cur = path.join(' ');
+    if (currentNode.n_paths > paths.length) {
+      $box.append($('<p class="muted"></p>').text('全' + currentNode.n_paths + '通りのうち上位' + paths.length + '通り'));
+    }
+    paths.forEach(function (pc) {
+      var seq = pc[0] ? pc[0].split(' ') : [];
+      var label = seq.map(function (san, i) { return moveLabel(i, san); }).join(' ');
+      var $row = $('<div class="path-row"></div>');
+      if (pc[0] === cur) $row.addClass('current');
+      $row.append($('<span class="path-seq"></span>').text(label || '(開始局面)'));
+      $row.append($('<span class="count"></span>').text(pc[1] + '局'));
+      $row.on('click', function () { walkToPath(seq); });
+      $box.append($row);
+    });
+  }
+
   function lichessAnalysisUrl(fen) {
     return 'https://lichess.org/analysis/' + encodeURI(fen) + '?color=' + color;
   }
@@ -191,6 +228,7 @@
   function render() {
     renderBreadcrumb();
     renderMoveList();
+    renderTranspositions();
     renderSampleGames();
     $('#opening-name').text(currentNode.opening || (path.length === 0 ? '開始局面' : '(未分類)'));
     var total = currentNode.count || 0;
@@ -209,7 +247,8 @@
     var move = game.move({ from: source, to: target, promotion: 'q' });
     if (move === null) return 'snapback';
 
-    if (!currentNode.children[move.san]) {
+    var next = childOf(currentNode, move.san);
+    if (!next) {
       game.undo();
       $('#hint').text('この手 (' + move.san + ') はあなたの棋譜にはありません。');
       return 'snapback';
@@ -217,7 +256,7 @@
 
     $('#hint').text('');
     path = path.concat([move.san]);
-    currentNode = currentNode.children[move.san];
+    currentNode = next;
     render();
   }
 

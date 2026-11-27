@@ -161,3 +161,20 @@ footer {
   font-size: 0.8rem;
   text-align: center;
 }
+
+/* この局面への手順(トランスポジション) */
+.small { font-size: 0.75rem; font-weight: normal; }
+.path-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.path-row:hover { border-color: var(--accent); }
+.path-row.current { border-color: var(--accent); font-weight: 600; }
+.path-row .count { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
