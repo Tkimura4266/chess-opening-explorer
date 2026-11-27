@@ -230,7 +230,9 @@
     renderMoveList();
     renderTranspositions();
     renderSampleGames();
-    $('#opening-name').text(currentNode.opening || (path.length === 0 ? '開始局面' : '(未分類)'));
+    var fallbackName = path.length === 0 ? '開始局面'
+      : path.map(function (san, i) { return moveLabel(i, san); }).join(' ');
+    $('#opening-name').text(path.length === 0 ? '開始局面' : (currentNode.opening || fallbackName));
     var total = currentNode.count || 0;
     $('#node-stats').text(
       total + '局 (勝ち ' + currentNode.wins + ' / 分け ' + currentNode.draws + ' / 負け ' + currentNode.losses + ')'
