@@ -13,7 +13,8 @@
   var RESULT_LABEL = { win: '勝ち', loss: '負け', draw: '引分' };
 
   function fetchJSON(url) {
-    return fetch(url).then(function (res) {
+    // 毎朝更新されるデータなので、ブラウザのキャッシュは必ずサーバーに確認してから使う
+    return fetch(url, { cache: 'no-cache' }).then(function (res) {
       if (!res.ok) throw new Error('failed to load ' + url);
       return res.json();
     });
